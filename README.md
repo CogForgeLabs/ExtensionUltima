@@ -1,116 +1,212 @@
 # ExtensionUltima
 
-A modular, encryption-first "ultimate extension": one host that loads many sub-extension
-modules, all running on a shared, security-focused core. See [`CLAUDE.md`](./CLAUDE.md) for
-the standing rules and [`MODULE_LOG.md`](./MODULE_LOG.md) for the module registry.
+**ExtensionUltima** is a modular, security-first browser extension platform designed to host multiple independent automation and productivity modules under a single encrypted core.
+
+Instead of installing and managing dozens of separate extensions, ExtensionUltima provides one secure host extension with a shared capability framework, encrypted storage, automation engine, and module ecosystem.
+
+## Features
+
+* 🔐 **Encryption-first architecture** — sensitive data is encrypted at rest using envelope encryption.
+* 🧩 **Modular design** — add, remove, or develop modules independently.
+* ⚡ **Background automation engine** — scheduling, triggers, and activity management built in.
+* 🛡️ **Least-privilege security model** — modules only receive capabilities they explicitly declare.
+* 🌐 **Cross-browser support** — Chrome, Firefox, Edge, and Safari builds.
+* 📦 **Unified launcher UI** — discover, pin, configure, and manage modules from a single interface.
+* 🔄 **Persistent automations** — jobs survive service worker restarts and browser background lifecycle events.
+
+---
+
+## Security Model
+
+ExtensionUltima is built around a layered encryption architecture.
+
+### Envelope Encryption
+
+A randomly generated 256-bit Data Encryption Key (DEK) encrypts all stored data.
+
+The DEK is protected by a Key Encryption Key (KEK) derived from your master passphrase using PBKDF2-SHA256. Only the wrapped DEK and non-secret parameters are persisted.
+
+### In-Memory Keys
+
+When unlocked, the DEK exists only in memory as a non-extractable cryptographic key.
+
+Locking the vault or browser worker eviction immediately removes access to encrypted data.
+
+### Encrypted Storage
+
+Both values and logical key names are encrypted before storage.
+
+Persistent records use opaque identifiers rather than plaintext names.
+
+### Least Privilege
+
+Modules receive only the capabilities they explicitly declare.
+
+Attempting to access undeclared functionality results in a runtime error.
+
+---
 
 ## Architecture
 
-```
+```text
 src/
-  core/                 thin, security-owning core
-    crypto/             encryption engine (AES-GCM), KDF (PBKDF2), encoding
-    keyvault/           master-key lifecycle (envelope encryption, in-memory DEK)
-    storage/            SecureStore — encrypted-at-rest key/value with encrypted key index
-    modules/            module contract + registry/loader (capability least-privilege)
-    browser.ts          single WebExtension API entry (webextension-polyfill)
-    log.ts              security-aware logger (never logs secrets)
-    core.ts             wires it all together
-  background/           service worker / background script — boots the core
-  ui/popup/             unlock UI
-  modules/<id>/         sub-extension modules (one folder each)
-build/build.mjs         cross-browser build → dist/<chrome|firefox|edge|safari>/
+  core/
+    crypto/
+    keyvault/
+    storage/
+    modules/
+    browser.ts
+    log.ts
+    core.ts
+
+  background/
+  ui/popup/
+  modules/<id>/
+
+build/
+  build.mjs
 ```
 
-### Security model
-- **Envelope encryption.** A random 256-bit Data Encryption Key (DEK) encrypts all data.
-  The DEK is wrapped by a Key Encryption Key (KEK) derived from your master passphrase
-  (PBKDF2-SHA256). Only the wrapped DEK and non-secret params touch disk.
-- **In-memory only.** On unlock, the DEK is unwrapped into a **non-extractable** key held
-  only in the background worker's memory. Locking — or the worker being evicted — discards it.
-- **Encrypted at rest, always.** Values and their logical key names are encrypted; on-disk
-  record keys are opaque random ids.
-- **Least privilege.** Each module gets a namespaced store and only the capabilities it
-  declares; undeclared capabilities throw on use.
+Core responsibilities:
 
-## Build & load
+* Cryptography
+* Secure storage
+* Key management
+* Module lifecycle
+* Capability enforcement
+* Browser abstraction
 
-```sh
+---
+
+## Build
+
+```bash
 npm install
-npm run typecheck   # type-check the whole source tree
-npm run build       # emit dist/chrome, dist/firefox, dist/edge, dist/safari
+npm run typecheck
+npm run build
 ```
 
-Then load the unpacked extension from the matching folder:
-- **Chrome/Edge:** `chrome://extensions` → enable Developer mode → *Load unpacked* → `dist/chrome`.
-- **Firefox:** `about:debugging` → This Firefox → *Load Temporary Add-on* → `dist/firefox/manifest.json`.
+Generated builds:
 
-First time you open the popup, the passphrase you enter **initializes** the vault. After
-that, the same passphrase unlocks it.
+```text
+dist/
+  chrome/
+  firefox/
+  edge/
+  safari/
+```
 
-## Launcher, triggers & capabilities
+---
 
-- **Launcher popup.** After unlock, the popup is a search-driven launcher: type to filter,
-  scroll **Pinned / Most used / All**, and pin (📌) your favourites. Pins and usage counts
-  are stored encrypted. Modules with `hasPanel: true` open a config panel; register the
-  panel in `src/ui/popup/panels.ts`.
-- **Activity manager.** The launcher shows a **Running now** panel at the top listing every
-  active automation across all modules. It groups jobs **by tab/site** (or by module — toggle),
-  with collapsible sections, a filter box, and a scroll area so long lists stay manageable.
-  Each job has a **live countdown**, **pause/resume** (⏸/▶), and **stop** (⏹); groups and the
-  whole panel have a **Stop all**. Module rows also show a "running" badge or an enabled-state
-  summary. A module surfaces its state by exposing a `status` command returning `{ active, summary }`.
-- **Triggers & scopes.** A module asks `ctx.triggers.schedule({ action, trigger, scope })`
-  to run work later. **Trigger:** `manual` · `interval` (with optional random range) ·
-  `schedule` (times of day). **Scope:** `tab` · `url` · `domain` · `all-tabs` · `window`.
-  Jobs persist encrypted and resume on unlock.
-- **Capabilities (least privilege).** A module receives only the `ctx.*` services it
-  declares: `storage`, `log`, `tabs`, `triggers`, `scripting`, `notifications`. Anything
-  undeclared throws on use.
+## Loading the Extension
 
-## Modules
+### Chrome / Edge
 
-Each is single-purpose with its own small panel; they share the trigger/scope framework and
-the popup controls in `src/ui/popup/controls.ts`.
+1. Open `chrome://extensions`
+2. Enable **Developer Mode**
+3. Select **Load unpacked**
+4. Choose `dist/chrome`
 
-- **Auto Refresh** (`src/modules/auto-refresh/`) — reload tabs on an interval (random range,
-  cache-bypass, scroll-position memory) or at scheduled times; settings remembered per URL.
-- **Keep Alive** (`src/modules/keep-alive/`) — light activity (plus an optional click) to
-  stop sessions timing out. Never reloads.
-- **Auto Click** (`src/modules/auto-click/`) — click a CSS-selected element on a timer/schedule.
-- **Page Watch** (`src/modules/page-watch/`) — notify when given text appears on a page.
+### Firefox
 
-Page features (`auto-click`, scroll memory, keep-alive, text scan) use `scripting` injection;
-each module keeps its self-contained injected functions in its own `inject.ts`.
+1. Open `about:debugging`
+2. Select **This Firefox**
+3. Click **Load Temporary Add-on**
+4. Select `dist/firefox/manifest.json`
 
-### Background execution
-Automations run from the background worker. Two mechanisms keep them firing when the popup is
-closed and the worker is evicted:
-- **Session key cache** — the DEK is held in `storage.session` (RAM only, never disk, cleared
-  on browser close), so a restarted worker resumes without re-prompting. On browser restart
-  the cache is gone and the vault asks for the passphrase again.
-- **Alarm-driven scheduler** — jobs carry a persisted absolute next-fire time and a 30s tick
-  alarm wakes the worker to fire due jobs, so timing survives eviction (≤30s granularity when
-  the worker isn't kept warm) instead of resetting.
+---
 
-> Permissions: the build requests `<all_urls>` host access at install so automations work
-> on every site without per-site prompts. Page injection also needs `scripting`. To tighten
-> this later, switch to `optional_host_permissions` and request per-site on demand.
+## First Launch
 
-## Adding a module
-1. Create `src/modules/<id>/index.ts` exporting an `ExtensionModule`. Copy a close example:
-   `notes` (data + status), `auto-refresh` (timer jobs), or `auto-mute` (per-site effect with
-   `activity`/`stopActivity`).
-2. Fill the manifest: `icon`, `keywords`, `category`, `hasPanel`, `browsers` (Rule 4),
-   `capabilities`. Use only the declared `ctx.*` services.
-3. Register it in `src/core/core.ts`. If it has a panel, add `src/modules/<id>/panel.ts`
-   and register it in `src/ui/popup/panels.ts`.
-4. Surface it in the Activity dashboard via triggers, `activity`/`stopActivity`, or `status`
-   (Rule 5).
-5. Add a row to [`MODULE_LOG.md`](./MODULE_LOG.md) (Rule 1).
+The first passphrase entered initializes a new encrypted vault.
 
-## Security roadmap
-- Argon2id KDF (WASM) as an upgrade from PBKDF2.
-- Per-module capability manifests enforced at registration.
-- Optional auto-lock timeout and re-encryption on passphrase change.
-- Integrity-verified module loading.
+After initialization, the same passphrase is required to unlock and access encrypted module data.
+
+---
+
+## Activity Manager
+
+ExtensionUltima includes a centralized activity dashboard for all running automations.
+
+Features include:
+
+* Running job overview
+* Site and tab grouping
+* Module grouping
+* Live countdown timers
+* Pause and resume controls
+* Individual stop controls
+* Global stop-all actions
+* Search and filtering
+
+Module status is surfaced through a standardized status interface.
+
+---
+
+## Trigger Framework
+
+Modules can schedule work through a unified trigger system.
+
+### Trigger Types
+
+* Manual
+* Interval
+* Randomized Interval
+* Scheduled Time
+
+### Scopes
+
+* Current Tab
+* URL
+* Domain
+* All Tabs
+* Window
+
+Jobs are stored encrypted and automatically restored when unlocked.
+
+---
+
+## Developing Modules
+
+Creating a module requires:
+
+1. Creating `src/modules/<id>/`
+2. Exporting an `ExtensionModule`
+3. Declaring required capabilities
+4. Registering the module in the core
+5. Adding UI panels if required
+6. Updating the module registry
+
+Modules are intentionally isolated and should remain focused on a single responsibility.
+
+---
+
+## Project Status
+
+ExtensionUltima is under active development.
+
+Planned improvements include:
+
+* Argon2id key derivation
+* Enhanced capability enforcement
+* Automatic vault locking
+* Passphrase rotation support
+* Integrity-verified module loading
+* Expanded module ecosystem
+
+---
+
+## License
+
+Copyright © 2026 CogForgeLabs
+
+This project is licensed under the **CogForgeLabs Non-Commercial Attribution License (CNCAL)**.
+
+Commercial use is prohibited without written permission.
+
+Any public use, redistribution, fork, or derivative work must provide attribution to:
+
+**Cognitive Industries**
+cognitive-industries.org
+
+See the `LICENSE` file for complete terms.
