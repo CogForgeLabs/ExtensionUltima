@@ -19,10 +19,17 @@ export class Prefs {
     return (await this.store().get<Record<string, number>>('usage')) ?? {};
   }
 
+  async lastUsed(): Promise<Record<string, number>> {
+    return (await this.store().get<Record<string, number>>('lastUsed')) ?? {};
+  }
+
   async recordLaunch(id: string): Promise<void> {
     const usage = await this.usage();
     usage[id] = (usage[id] ?? 0) + 1;
     await this.store().put('usage', usage);
+    const lastUsed = await this.lastUsed();
+    lastUsed[id] = Date.now();
+    await this.store().put('lastUsed', lastUsed);
   }
 
   async togglePin(id: string): Promise<string[]> {

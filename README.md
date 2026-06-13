@@ -7,12 +7,14 @@ Instead of installing and managing dozens of separate extensions, ExtensionUltim
 ## Features
 
 * 🔐 **Encryption-first architecture** — sensitive data is encrypted at rest using envelope encryption.
-* 🧩 **Modular design** — add, remove, or develop modules independently.
-* ⚡ **Background automation engine** — scheduling, triggers, and activity management built in.
-* 🛡️ **Least-privilege security model** — modules only receive capabilities they explicitly declare.
-* 🌐 **Cross-browser support** — Chrome, Firefox, Edge, and Safari builds.
-* 📦 **Unified launcher UI** — discover, pin, configure, and manage modules from a single interface.
-* 🔄 **Persistent automations** — jobs survive service worker restarts and browser background lifecycle events.
+* 🧩 **Modular design** — a large, growing library of focused tools; add, remove, or develop modules independently.
+* ⚡ **Background automation engine** — scheduling, triggers, and a global activity dashboard built in.
+* 🛡️ **Least-privilege, opt-in permissions** — nothing scary at install; each tool requests only what it needs, when you enable it, and permissions are shared once granted.
+* 🔒 **Auto-lock** — the vault locks itself after a configurable period of inactivity.
+* 🌐 **Cross-browser support** — Chrome, Firefox, Edge, and Safari builds from one codebase.
+* 📦 **Unified launcher UI** — search, pin, recent/most-used, and a Running view to see and control everything active.
+* 🔄 **Persistent automations** — jobs (and active page effects) survive service-worker eviction and browser lifecycle events.
+* 🙅 **No hijacking** — never overrides your new-tab page, search, or homepage unless you explicitly opt in.
 
 ---
 
@@ -43,6 +45,22 @@ Persistent records use opaque identifiers rather than plaintext names.
 Modules receive only the capabilities they explicitly declare.
 
 Attempting to access undeclared functionality results in a runtime error.
+
+### Auto-Lock
+
+The vault locks automatically after a configurable period of inactivity (default 15 minutes),
+clearing the in-memory key. The idle check is enforced even across a service-worker
+eviction/resume, so it cannot be bypassed by the background lifecycle. Configure it in the
+popup under 🛡️ **Security**.
+
+### Opt-In, On-Demand Permissions
+
+The install footprint is intentionally tiny — only `storage` and `alarms`. Every other
+capability (`tabs`, `scripting`, host access, `notifications`, `cookies`, `sessions`,
+`downloads`, `contextMenus`) is **optional** and requested the moment you enable a tool that
+needs it, from a real user gesture. Because browser permissions are extension-global, a
+permission granted for one tool is **shared by every other tool** that needs it — you're only
+asked once. Review and revoke them anytime under 🛡️ **Security**.
 
 ---
 
@@ -82,8 +100,9 @@ Core responsibilities:
 
 ```bash
 npm install
-npm run typecheck
-npm run build
+npm run typecheck   # type-check the whole source tree
+npm run build       # emit dist/<chrome|firefox|edge|safari>
+npm run package     # zip each build into packages/ for store upload
 ```
 
 Generated builds:
@@ -95,6 +114,11 @@ dist/
   edge/
   safari/
 ```
+
+### Build options
+
+* `EU_NEWTAB=1 npm run build` — opt in to making the dashboard your actual new-tab page.
+  By default the new-tab page is **not** overridden (the dashboard opens on demand instead).
 
 ---
 
@@ -121,6 +145,10 @@ dist/
 The first passphrase entered initializes a new encrypted vault.
 
 After initialization, the same passphrase is required to unlock and access encrypted module data.
+
+Tools that need browser permissions (e.g. page access for injection, cookies, downloads)
+show an **Enable** prompt the first time you open them, listing exactly what they need. Granting
+is one-time and shared across tools.
 
 ---
 
@@ -166,6 +194,26 @@ Jobs are stored encrypted and automatically restored when unlocked.
 
 ---
 
+## Module Library
+
+ExtensionUltima ships a broad library of focused tools (50+), grouped by category. A sample:
+
+* **Automation** — Auto Refresh, Auto Click, Keep Alive, Page Watch, Scheduled Opener
+* **Tabs** — Tab Switcher, Session Saver, Tab Suspender, Snooze Tab, Recently Closed, Copy Tab URLs, Merge Windows, Auto Mute
+* **Security** — Password Vault, Authenticator (2FA/TOTP), Secure Notes, Bookmark Vault, Breach Checker, Passphrase Generator
+* **Privacy** — Cookie Cleaner, URL Cleaner, Ephemeral Notes, Incognito Opener
+* **Page** — Dark Mode, Reader Mode, Element Zapper, Web Highlighter, Sticky Notes, Find & Replace, Auto-Scroll, Selection Toolbar, Text Expander
+* **Media** — Video Speed, Picture-in-Picture, Volume Booster
+* **Monitoring** — Change Monitor, Uptime Monitor
+* **Focus** — Pomodoro, Reminders, Site Blocker, Time Tracker, Habit Tracker
+* **Utilities** — QR Code, Read Aloud, Screenshot, Image Downloader, Clipboard Manager
+* **Power** — Hotkeys, Context-Menu Actions, Address-bar Commands, New-Tab Dashboard
+
+Every tool that runs in the background or leaves an ongoing effect appears in the **Running**
+view of the Activity dashboard, where it can be paused, stopped, or turned off.
+
+---
+
 ## Developing Modules
 
 Creating a module requires:
@@ -200,13 +248,17 @@ Planned improvements include:
 
 Copyright © 2026 CogForgeLabs
 
-This project is licensed under the **CogForgeLabs Non-Commercial Attribution License (CNCAL)**.
+This work is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International License (CC BY-NC-SA 4.0)**.
 
-Commercial use is prohibited without written permission.
+`SPDX-License-Identifier: CC-BY-NC-SA-4.0`
 
-Any public use, redistribution, fork, or derivative work must provide attribution to:
+You are free to **share** and **adapt** the material, under these terms:
 
-**Cognitive Industries**
-cognitive-industries.org
+* **Attribution** — credit *ExtensionUltima by CogForgeLabs* (cognitive-industries.org), link to the license, and indicate changes.
+* **NonCommercial** — not for commercial use without written permission.
+* **ShareAlike** — distribute derivatives under the same license.
 
-See the `LICENSE` file for complete terms.
+Full legal code: <https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode>
+
+See the [`LICENSE`](./LICENSE) file for the complete notice.

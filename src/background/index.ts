@@ -18,9 +18,43 @@ async function ensureTick(): Promise<void> {
   }
 }
 
-// On worker start, try to resume an active session (key held in RAM via storage.session).
+// --- Auto-lock: lock the vault after a period of inactivity. The timeout and last-activity
+// timestamp live in plain local storage (non-secret) so the idle check works even across a
+// worker eviction+resume — idleness can't be bypassed by the session-key resume path.
+const AUTOLOCK_KEY = 'eu:autolock'; // minutes; 0 = disabled
+const ACTIVITY_KEY = 'eu:lastActivity';
+const DEFAULT_AUTOLOCK_MIN = 15;
+
+async function getAutoLockMinutes(): Promise<number> {
+  const r = await browser.storage.local.get(AUTOLOCK_KEY);
+  const v = r[AUTOLOCK_KEY];
+  return typeof v === 'number' ? v : DEFAULT_AUTOLOCK_MIN;
+}
+
+async function touchActivity(): Promise<void> {
+  try {
+    await browser.storage.local.set({ [ACTIVITY_KEY]: Date.now() });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function idleExceeded(): Promise<boolean> {
+  const mins = await getAutoLockMinutes();
+  if (mins <= 0) return false;
+  const r = await browser.storage.local.get(ACTIVITY_KEY);
+  const last = typeof r[ACTIVITY_KEY] === 'number' ? (r[ACTIVITY_KEY] as number) : Date.now();
+  return Date.now() - last > mins * 60_000;
+}
+
+// On worker start: if idle was exceeded while we were gone, drop the session key so the vault
+// stays locked; otherwise resume the active session.
 void (async () => {
   try {
+    if (await idleExceeded()) {
+      await core.vault.session.clear();
+      return;
+    }
     if (await core.tryResume()) {
       await ensureTick();
       await buildContextMenus();
@@ -99,6 +133,10 @@ omni?.onInputEntered.addListener(async (text) => {
 browser.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== TICK) return;
   try {
+    if (await idleExceeded()) {
+      await core.lock(); // clears the in-memory DEK and the session key
+      return;
+    }
     if (!core.vault.isUnlocked && !(await core.tryResume())) return;
     await core.scheduler.tick();
   } catch {
@@ -112,12 +150,22 @@ interface Incoming {
   id?: string;
   command?: string;
   payload?: unknown;
+  minutes?: number;
 }
 
 browser.runtime.onMessage.addListener(async (raw: unknown) => {
   const msg = raw as Incoming;
+  // Any interaction counts as activity and defers auto-lock.
+  void touchActivity();
   try {
     switch (msg?.type) {
+      case 'getAutoLock':
+        return { ok: true, minutes: await getAutoLockMinutes() };
+
+      case 'setAutoLock':
+        await browser.storage.local.set({ [AUTOLOCK_KEY]: Math.max(0, Number(msg.minutes) || 0) });
+        return { ok: true };
+
       case 'status':
         return {
           ok: true,

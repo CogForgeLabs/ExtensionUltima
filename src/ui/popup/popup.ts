@@ -40,6 +40,7 @@ interface LauncherData {
   modules: ModuleDescriptor[];
   pins: string[];
   usage: Record<string, number>;
+  lastUsed: Record<string, number>;
   activity: ActivityEntry[];
   statuses: ModuleStatus[];
 }
@@ -47,6 +48,7 @@ interface LauncherData {
 let descriptors: ModuleDescriptor[] = [];
 let pins: string[] = [];
 let usage: Record<string, number> = {};
+let lastUsed: Record<string, number> = {};
 let activity: ActivityEntry[] = [];
 let statusById = new Map<string, ModuleStatus>();
 
@@ -106,6 +108,7 @@ async function openLauncher(): Promise<void> {
   descriptors = data.modules;
   pins = data.pins;
   usage = data.usage;
+  lastUsed = data.lastUsed;
   activity = data.activity;
   statusById = new Map(data.statuses.map((s) => [s.id, s]));
   await loadGranted();
@@ -309,14 +312,24 @@ function renderList(query: string): void {
   const list = $('list');
   list.innerHTML = '';
   const matches = descriptors.filter((d) => score(d, query));
+  const pinnedSet = new Set(pins);
+  const notPinned = matches.filter((d) => !pinnedSet.has(d.id));
 
-  const pinned = matches.filter((d) => pins.includes(d.id));
-  const frequent = matches
-    .filter((d) => !pins.includes(d.id) && (usage[d.id] ?? 0) > 0)
-    .sort((a, b) => (usage[b.id] ?? 0) - (usage[a.id] ?? 0));
-  const rest = matches.filter((d) => !pins.includes(d.id) && !(usage[d.id] ?? 0));
+  const pinned = matches.filter((d) => pinnedSet.has(d.id));
+  const recent = notPinned
+    .filter((d) => (lastUsed[d.id] ?? 0) > 0)
+    .sort((a, b) => (lastUsed[b.id] ?? 0) - (lastUsed[a.id] ?? 0))
+    .slice(0, 5);
+  const recentSet = new Set(recent.map((d) => d.id));
+  const frequent = notPinned
+    .filter((d) => !recentSet.has(d.id) && (usage[d.id] ?? 0) > 0)
+    .sort((a, b) => (usage[b.id] ?? 0) - (usage[a.id] ?? 0))
+    .slice(0, 5);
+  const usedSet = new Set([...recentSet, ...frequent.map((d) => d.id)]);
+  const rest = notPinned.filter((d) => !usedSet.has(d.id));
 
   if (pinned.length) list.appendChild(section('Pinned', pinned));
+  if (recent.length) list.appendChild(section('Recent', recent));
   if (frequent.length) list.appendChild(section('Most used', frequent));
   if (rest.length) list.appendChild(section(query ? 'Results' : 'All extensions', rest));
   if (!matches.length) list.appendChild(muted('No matching extensions.'));
@@ -479,10 +492,31 @@ function renderEnable(d: ModuleDescriptor): void {
 
 async function renderPermissions(): Promise<void> {
   await loadGranted();
-  $('panelTitle').textContent = '🔐 Permissions';
+  $('panelTitle').textContent = '🛡️ Security';
   const root = $('panelRoot');
   root.innerHTML = '';
   show('panel');
+
+  // Auto-lock setting
+  const al = await send<{ minutes: number }>({ type: 'getAutoLock' });
+  const sel = el('select', {}, [
+    el('option', { value: '0', textContent: 'Never' }),
+    el('option', { value: '1', textContent: '1 minute' }),
+    el('option', { value: '5', textContent: '5 minutes' }),
+    el('option', { value: '15', textContent: '15 minutes' }),
+    el('option', { value: '30', textContent: '30 minutes' }),
+    el('option', { value: '60', textContent: '1 hour' }),
+  ]) as HTMLSelectElement;
+  sel.value = String(al.minutes);
+  sel.addEventListener('change', () => void send({ type: 'setAutoLock', minutes: Number(sel.value) }));
+  root.append(
+    el('fieldset', {}, [
+      el('legend', { textContent: 'Auto-lock' }),
+      el('p', { className: 'muted', style: 'font-size:11px;margin:0 0 6px', textContent: 'Lock the vault after this much inactivity (clears the in-memory key).' }),
+      el('div', { className: 'row' }, [el('span', { className: 'muted', textContent: 'Lock after' }), sel]),
+    ]),
+    el('h2', { textContent: 'Permissions' }),
+  );
 
   const optional = ['tabs', 'scripting', 'notifications', 'cookies', 'sessions', 'downloads', 'contextMenus'];
   const rows = optional.filter((p) => grantedPerms.has(p));

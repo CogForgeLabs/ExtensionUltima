@@ -1,10 +1,11 @@
-// Auto-Scroll — hands-free scrolling of the active tab. Active tabs surface in the Activity
-// dashboard so scrolling can be stopped from there (Rule 5).
+// Auto-Scroll — hands-free scrolling of the active tab. Active tabs (persisted) surface in
+// the Activity dashboard so scrolling can be stopped from there (Rule 5).
 import type { ExtensionModule, ModuleContext } from '../../core/modules/types';
+import { PersistentTabSet } from '../../core/storage/active-set';
 import { startScroll, stopScroll } from './inject';
 
 let ctx: ModuleContext;
-const active = new Set<number>();
+let active: PersistentTabSet;
 
 const mod: ExtensionModule = {
   manifest: {
@@ -17,13 +18,14 @@ const mod: ExtensionModule = {
     category: 'Page',
     hasPanel: true,
     browsers: ['chrome', 'firefox', 'edge', 'safari'],
-    capabilities: ['log', 'tabs', 'scripting'],
+    capabilities: ['log', 'tabs', 'scripting', 'storage'],
   },
 
   init(c) {
     ctx = c;
-    ctx.tabs.onComplete((tabId) => active.delete(tabId)); // reload stops the interval
-    ctx.tabs.onRemoved((tabId) => active.delete(tabId));
+    active = new PersistentTabSet(ctx.storage);
+    ctx.tabs.onComplete((tabId) => void active.delete(tabId)); // reload stops the interval
+    ctx.tabs.onRemoved((tabId) => void active.delete(tabId));
     ctx.log.info('initialized');
   },
 
@@ -32,7 +34,7 @@ const mod: ExtensionModule = {
       const tab = await ctx.tabs.activeTab();
       if (!tab) throw new Error('No active tab');
       await ctx.tabs.runFunc(tab.id, startScroll, [Math.max(1, p.speed || 1)]);
-      active.add(tab.id);
+      await active.add(tab.id);
       return { ok: true };
     },
     async stop() {
@@ -43,12 +45,14 @@ const mod: ExtensionModule = {
         } catch {
           /* ignore */
         }
-        active.delete(tab.id);
+        await active.delete(tab.id);
       }
       return { ok: true };
     },
-    activity() {
-      return [...active].map((tabId) => ({ id: String(tabId), label: 'Auto-Scroll', scope: { kind: 'tab', tabId }, stoppable: true }));
+    async activity() {
+      const open = new Set((await ctx.tabs.allTabs()).map((t) => t.id));
+      const ids = await active.prune(open);
+      return ids.map((tabId) => ({ id: String(tabId), label: 'Auto-Scroll', scope: { kind: 'tab', tabId }, stoppable: true }));
     },
     async stopActivity(p: { id: string }) {
       const tabId = Number(p.id);
@@ -57,7 +61,7 @@ const mod: ExtensionModule = {
       } catch {
         /* ignore */
       }
-      active.delete(tabId);
+      await active.delete(tabId);
       return { ok: true };
     },
   },

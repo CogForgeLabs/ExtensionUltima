@@ -19,6 +19,8 @@ const base = {
   description: 'Modular, encryption-first ultimate browser extension.',
   icons: { 16: 'icon.png', 48: 'icon.png', 128: 'icon.png' },
   action: { default_title: 'ExtensionUltima', default_popup: 'popup.html', default_icon: 'icon.png' },
+  // Explicit MV3 CSP: only first-party scripts, no remote code, no objects.
+  content_security_policy: { extension_pages: "script-src 'self'; object-src 'self'" },
   // Required at install: only what the core itself needs — the encrypted vault ('storage',
   // incl. storage.session) and the scheduler keepalive ('alarms'). Everything else is
   // OPTIONAL and requested per-tool, at the moment a tool is enabled (see PermissionManager).

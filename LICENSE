@@ -1,132 +1,52 @@
-CogForgeLabs Non-Commercial Attribution License (CNCAL) v1.0
+ExtensionUltima
+Copyright © 2026 CogForgeLabs
 
-Copyright (c) 2026 CogForgeLabs
+This work is licensed under the
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
+(CC BY-NC-SA 4.0).
 
-This Software is made available under the terms of this License.
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
-DEFINITIONS
+================================================================================
 
-"Software" means all source code, binaries, documentation, assets, examples,
-configuration files, and other materials distributed with this project.
+You are free to:
 
-"Copyright Holder" means CogForgeLabs.
+  • Share — copy and redistribute the material in any medium or format.
+  • Adapt — remix, transform, and build upon the material.
 
-"Attribution Information" means:
+The licensor cannot revoke these freedoms as long as you follow the license terms.
 
-    Cognitive Industries
-    https://cognitive-industries.org
+Under the following terms:
 
-"Derivative Work" means any modification, adaptation, translation,
-enhancement, extension, fork, or other work based in whole or in part on the
-Software.
+  • Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any reasonable
+    manner, but not in any way that suggests the licensor endorses you or your
+    use. Credit: "ExtensionUltima by CogForgeLabs (cognitive-industries.org)".
 
-"Commercial Use" includes, but is not limited to:
+  • NonCommercial — You may not use the material for commercial purposes without
+    prior written permission from the copyright holder.
 
-    - Selling the Software;
-    - Selling services based on the Software;
-    - Offering the Software as a hosted or cloud service;
-    - Using the Software in a product or service for which fees,
-      subscriptions, donations, advertising revenue, sponsorship revenue,
-      or other compensation is received;
-    - Integrating the Software into a commercial product;
-    - Internal business use by a for-profit entity;
-    - Any use primarily intended for commercial advantage or monetary gain.
+  • ShareAlike — If you remix, transform, or build upon the material, you must
+    distribute your contributions under the same license as the original.
 
-GRANT OF RIGHTS
+  • No additional restrictions — You may not apply legal terms or technological
+    measures that legally restrict others from doing anything the license permits.
 
-Subject to the terms of this License, any person or organization is granted a
-worldwide, non-exclusive, non-transferable, revocable license to:
+Notices:
 
-    - Use the Software;
-    - Study the Software;
-    - Copy the Software;
-    - Modify the Software;
-    - Create Derivative Works;
-    - Share and redistribute the Software and Derivative Works.
+  You do not have to comply with the license for elements of the material in the
+  public domain or where your use is permitted by an applicable exception or
+  limitation. No warranties are given. The license may not give you all of the
+  permissions necessary for your intended use. For example, other rights such as
+  publicity, privacy, or moral rights may limit how you use the material.
 
-MANDATORY ATTRIBUTION
+================================================================================
 
-Any use, redistribution, publication, deployment, fork, derivative work, or
-public availability of the Software must include clear and visible attribution
-to Cognitive Industries.
+This is a human-readable summary of (and not a substitute for) the license.
+The full legal code is available at:
 
-The following attribution must be displayed:
+  https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
-    "Powered by or derived from software by Cognitive Industries
-    (https://cognitive-industries.org)"
+Attribution:
 
-The attribution must appear, where applicable:
-
-    - In repository READMEs;
-    - In source distributions;
-    - In documentation;
-    - In software about pages;
-    - In application credits;
-    - On publicly accessible websites using the Software;
-    - In any location where third parties would reasonably expect to find
-      software attribution.
-
-The attribution may not be removed, hidden, obscured, or misrepresented.
-
-NON-COMMERCIAL RESTRICTION
-
-Commercial Use is strictly prohibited without prior written permission from
-CogForgeLabs.
-
-No person or organization may:
-
-    - Sell the Software;
-    - Sell Derivative Works;
-    - License the Software for compensation;
-    - Offer paid support for the Software;
-    - Offer the Software as a hosted service;
-    - Use the Software within a revenue-generating product or service;
-    - Use the Software internally within a for-profit business;
-    - Use the Software for commercial advantage.
-
-Commercial licenses may be obtained separately from CogForgeLabs.
-
-COPYLEFT REQUIREMENT
-
-Any Derivative Work or redistribution containing any portion of the Software
-must:
-
-    - Remain under this License;
-    - Include a copy of this License;
-    - Preserve all copyright notices;
-    - Preserve all attribution requirements.
-
-No recipient may impose additional restrictions that conflict with this
-License.
-
-NO TRADEMARK LICENSE
-
-This License does not grant permission to use the names, logos, trademarks,
-service marks, or branding of CogForgeLabs or Cognitive Industries except as
-required for attribution.
-
-TERMINATION
-
-Any violation of this License automatically and immediately terminates all
-rights granted under this License.
-
-Upon termination, the violator must cease all use, distribution, hosting, and
-deployment of the Software and any Derivative Works.
-
-RESERVATION OF RIGHTS
-
-All rights not expressly granted under this License are reserved by
-CogForgeLabs.
-
-DISCLAIMER OF WARRANTY
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
-
-LIMITATION OF LIABILITY
-
-IN NO EVENT SHALL COGFORGELABS, COGNITIVE INDUSTRIES, OR ANY CONTRIBUTORS BE
-LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  ExtensionUltima by CogForgeLabs — cognitive-industries.org

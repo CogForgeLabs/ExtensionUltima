@@ -1,6 +1,20 @@
+# Dependencies & build output
 node_modules/
 dist/
+packages/
+*.zip
+
+# Signing keys & secrets — never commit
+*.pem
+.env
+.env.*
+
+# Logs & OS cruft
 *.log
 .DS_Store
+Thumbs.db
+
+# Internal working docs (not part of the public repo)
 CLAUDE.md
 MODULE_LOG.md
+memory/

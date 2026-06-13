@@ -37,6 +37,13 @@ const mod: ExtensionModule = {
       const on = await enabled();
       return { active: on, summary: on ? 'on' : 'off' };
     },
+    async activity() {
+      return (await enabled()) ? [{ id: 'enabled', label: 'Selection Toolbar — on', stoppable: true }] : [];
+    },
+    async stopActivity() {
+      await ctx.storage.put('enabled', false);
+      return { ok: true };
+    },
     async toggle() {
       const on = !(await enabled());
       await ctx.storage.put('enabled', on);

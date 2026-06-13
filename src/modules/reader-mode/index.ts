@@ -1,10 +1,12 @@
-// Reader Mode — strip a page down to a clean, readable overlay. Active tabs are tracked so
-// they appear in the Activity dashboard and can be turned off from there (Rule 5).
+// Reader Mode — strip a page down to a clean, readable overlay. Active tabs are tracked
+// (and persisted, so they survive worker eviction) and appear in the Activity dashboard
+// where they can be turned off (Rule 5).
 import type { ExtensionModule, ModuleContext } from '../../core/modules/types';
+import { PersistentTabSet } from '../../core/storage/active-set';
 import { closeReader, toggleReader } from './inject';
 
 let ctx: ModuleContext;
-const active = new Set<number>();
+let active: PersistentTabSet;
 
 const mod: ExtensionModule = {
   manifest: {
@@ -17,14 +19,15 @@ const mod: ExtensionModule = {
     category: 'Page',
     hasPanel: true,
     browsers: ['chrome', 'firefox', 'edge', 'safari'],
-    capabilities: ['log', 'tabs', 'scripting'],
+    capabilities: ['log', 'tabs', 'scripting', 'storage'],
   },
 
   init(c) {
     ctx = c;
+    active = new PersistentTabSet(ctx.storage);
     // A reload removes the overlay; a closed tab is gone — prune either way.
-    ctx.tabs.onComplete((tabId) => active.delete(tabId));
-    ctx.tabs.onRemoved((tabId) => active.delete(tabId));
+    ctx.tabs.onComplete((tabId) => void active.delete(tabId));
+    ctx.tabs.onRemoved((tabId) => void active.delete(tabId));
     ctx.log.info('initialized');
   },
 
@@ -33,12 +36,14 @@ const mod: ExtensionModule = {
       const tab = await ctx.tabs.activeTab();
       if (!tab) throw new Error('No active tab');
       const r = await ctx.tabs.runFunc(tab.id, toggleReader, []);
-      if (r === 'on') active.add(tab.id);
-      else active.delete(tab.id);
+      if (r === 'on') await active.add(tab.id);
+      else await active.delete(tab.id);
       return { state: r ?? 'unknown' };
     },
-    activity() {
-      return [...active].map((tabId) => ({ id: String(tabId), label: 'Reader Mode', scope: { kind: 'tab', tabId }, stoppable: true }));
+    async activity() {
+      const open = new Set((await ctx.tabs.allTabs()).map((t) => t.id));
+      const ids = await active.prune(open);
+      return ids.map((tabId) => ({ id: String(tabId), label: 'Reader Mode', scope: { kind: 'tab', tabId }, stoppable: true }));
     },
     async stopActivity(p: { id: string }) {
       const tabId = Number(p.id);
@@ -47,7 +52,7 @@ const mod: ExtensionModule = {
       } catch {
         /* tab gone — ignore */
       }
-      active.delete(tabId);
+      await active.delete(tabId);
       return { ok: true };
     },
   },

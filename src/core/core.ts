@@ -100,6 +100,7 @@ export interface LauncherState {
   modules: ModuleDescriptor[];
   pins: string[];
   usage: Record<string, number>;
+  lastUsed: Record<string, number>;
   activity: ActivityEntry[];
   statuses: ModuleStatus[];
 }
@@ -216,6 +217,7 @@ export class Core {
       modules: this.modules.descriptors(),
       pins: await this.prefs.pins(),
       usage: await this.prefs.usage(),
+      lastUsed: await this.prefs.lastUsed(),
       activity: await this.activity(),
       statuses: await this.modules.collectStatuses(),
     };
